@@ -1,12 +1,21 @@
 # cmake构建系统
 
-## 介绍
+## 术语
+**consuming target(消费目标)**
+
+
+**target usage requirement(目标使用需求**
+当目标A依赖于目标B时，目标B的**使用需求**就会自动传递给目标A,确保目标A在编译和链接的时候能够找到所需资源和配置。
+这里的**使用需求**可以是一系列配置信息，包括头文件搜索路径、编译选项、链接选项等。
+
+
+## 1. 介绍
 该构建系统基于CMake,他由若干高级逻辑目标组成。 每个目标对应一个可执行文件、库，或者是一个包含自定义命令的自定义目标。
 构建系统中定义了目标之间的依赖关系，这些依赖关系会决定构建顺序以及内容变更时的重新生成规则
 
-## 二进制目标
-`add_executable()`和`add_library()`命令分别用于定义**可执行文件**和**库**。生成的二进制文件根据目标平台会自动带上合适的前缀、后缀以及扩展名。
-`target_link_libraries()`命令用于表示二进制目标之间的依赖关系。
+## 2. 二进制目标
+`add_executable()`和`add_library()`命令分别用于定义**可执行文件**和**库**。生成的二进制文件根据目标平台会自动带上合适的前缀、
+后缀以及扩展名。`target_link_libraries()`命令用于表示二进制目标之间的依赖关系。
 ```cmake
 add_library(archive archive.cpp zip.cpp lzma.cpp)
 add_executable(zipapp zipapp.cpp)
@@ -18,7 +27,7 @@ target_link_libraries(zipapp archive)
 - 第二行，定义了一个可执行目标，该目标(.o/.obj)依赖于`zipapp.cpp`。编译时不涉及到外部库。
 - 第三行，告诉链接器，链接`zipapp`时需要加入`archive`这个静态库。从而链接器才会在链接阶段将`archive`和目标文件链接，最后生成可执行文件
 
-### 可执行文件
+### 2.1 可执行文件
 可执行文件是由链接对象一起创建的二进制文件，其中一个链接对象应该包含一个程序入口点（main函数)
 `add_executable()`命令用于定义**可执行目标**
 ```cmake
@@ -29,7 +38,7 @@ CMake生成构建规则并用于将源文件编译为目标文件，同时将目
 诸如`add_custom_command()`这类用于生成**构建时待执行规则**的命令，可直接将一个EXECUTABLE目标用作COMMAND对应的可执行文件。
 构建系统的规则会确保：在尝试运行该命令之前，先完成该可执行文件的构建。
 
-### 静态库
+### 2.2 静态库
 静态库其实是目标文件的归档，他们由归档器来创建，而不是链接器。可执行文件、共享库以及模块库在链接时能将静态库作为依赖项进行链接。链接器根据符号
 解析需求从静态库中选择目标文件的子集，然后将其链接为待生成的二进制文件。每个链接了静态库的二进制文件都会有静态库中所需文件的拷贝，
 静态库则在运行时不再需要。
@@ -75,10 +84,10 @@ CMake生成构建规则并用于将源文件编译为目标文件，并将这些
 共享库是一种二进制文件，它由若干目标文件链接在一起。在链接阶段，链接器将共享库的**名称和符号信息**记录到可执行文件中，在可执行文件运行的过程中，
 动态链接器就会根据**名称和符号信息**将所需要的库加载到内存中。这不同于静态库，需要将文件拷贝，最后都集中到可执行文件中。
 
-### 苹果框架
+### 2.3 苹果框架
 和苹果开发相关，可自行官网查看
 
-### 模块库
+### 2.4 模块库
 模块库也是链接的对象文件创建的二进制文件，但和共享库不同之处是，模块库不能作为依赖项供其他二进制文件链接：也就是说在`target_link_libraries()`
 这个命令中，不要将模块库放到右侧位置（就是不能供其他库使用）。模块库是应用程序的插件，且能够在程序后台运行时动态加载。
 
@@ -91,7 +100,7 @@ CMake生成构建规则并用于将源文件编译为目标文件，并将这些
 模块库的链接依赖项使用`target_link_libraries()`命令来指定。链接器会从模块库编译的目标文件中开始，然后通过查询链接的库来解析
 剩余的符号依赖。
 
-### 对象库
+### 2.5 对象库
 对象库是源代码编译之后的目标文件的集合，对象文件可以在链接可执行文件、共享库、模块库以及归档静态库时被使用。
 ```cmake
 add_library(archiveObjs OBJECT archive.cpp zip.cpp lzma.cpp)
@@ -116,15 +125,71 @@ target_link_libraries(test_exe archiveObjs)
 * 编译其**自身源文件**所生成的目标文件
 * 通过`target_link_libraries()`命令指定的**直接依赖项**的**对象库**所包含的目标文件
 
-使用`add_custom_command(TARGET)`命令时，对象库不能作为`TARGET`。但对象的列表能够
+使用`add_custom_command(TARGET)`命令时，对象库不能作为`TARGET`。但对象的列表能够通过`$<TARGET_OBJECTS:objlib>`在
+`add_custom_command(OUTPUT`或`file(GENERATE)`中使用`
 
-## 构建规范和使用要求
+## 3. 构建规范和使用要求
+目标的构建是根据其自身的构建规范，结合从其链接依赖项传播而来的使用要求进行的。两者都可以通过特定于目标的命令来指定。
 
-### 目标命令
+例子：
+```cmake
+add_library(archive SHARED archive.cpp zip.cpp)
 
-### 目标构建规范
+if (LZMA_FOUND)
+  # Add a source implementing support for lzma.
+  target_sources(archive PRIVATE lzma.cpp)
+
+  # Compile the 'archive' library sources with '-DBUILDING_WITH_LZMA'.
+  target_compile_definitions(archive PRIVATE BUILDING_WITH_LZMA)
+endif()
+
+target_compile_definitions(archive INTERFACE USING_ARCHIVE_LIB)
+
+add_executable(consumer consumer.cpp)
+
+# Link 'consumer' to 'archive'.  This also consumes its usage requirements,
+# so 'consumer.cpp' is compiled with '-DUSING_ARCHIVE_LIB'.
+target_link_libraries(consumer archive)
+```
+
+### 3.1 目标命令
+特定于目标的命令会填充二进制目标（Binary Targets）的构建规范，以及二进制目标、接口库（Interface Libraries）和导入目标（Imported Targets）
+的使用要求。
+
+调用这些命令时必须指定作用域关键字（scope keywords），每个关键字都会影响其后续参数的可见性。
+
+`PUBLIC`
+
+**理解**
 
 
-#### 目标编译属性
+### 3.2 目标构建规范
 
-#### 目标链接属性
+
+
+#### 3.2.1 目标编译属性
+
+#### 3.2.2 目标链接属性
+
+### 3.3 目标使用需求
+#### 3.3.1 传递编译属性
+#### 3.3.2 传递链接属性
+
+### 3.4 自定义传输属性
+### 3.5 兼容接口属性
+### 3.6 属性来源调试
+
+### 3.7生成式表达式的构建规范
+#### 3.7.1 include目录和使用规范
+### 3.8 链接库与生成式表达式
+### 3.9 输出产物
+#### 3.9.1 运行时输出产物
+#### 3.9.2 链接库输出产物
+#### 3.9.3 归档输出产物
+## 4. 构建配置
+### 4.1 大小写敏感
+### 4.2 默认和自定义配置
+## 5. 伪目标
+### 5.1 导入的目标
+### 5.2 别名目标
+### 5.3 接口库

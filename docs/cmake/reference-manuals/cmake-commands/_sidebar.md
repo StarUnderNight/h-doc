@@ -1,0 +1,5 @@
+- <span class="iconfont icon-atom"></span> [脚本命令](cmake/reference-manuals/cmake-commands/file.md)
+  - [file](cmake/reference-manuals/cmake-commands/file.md)
+- <span class="iconfont icon-pack"></span> 项目命令
+- <span class="iconfont icon-crown"></span> 测试命令
+- <span class="iconfont icon-factory"></span> 弃用命令

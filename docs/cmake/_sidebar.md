@@ -2,5 +2,5 @@
 - <span class="iconfont icon-pack"></span> 命令行工具
 - <span class="iconfont icon-crown"></span> 交互式对话
 - <span class="iconfont icon-factory"></span> 参考文档
-    - [cmake-buildsystem(7)](cmake/reference-manuals/cmake-buildsystem(7).md)
-    - [cmake-commands(7)](cmake/reference-manuals/cmake-commands(7).md)
+    - [cmake-buildsystem(7)](cmake/reference-manuals/cmake-buildsystem.md)
+    - [cmake-commands(7)](cmake/reference-manuals/cmake-commands/)
